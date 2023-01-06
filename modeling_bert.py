@@ -288,9 +288,20 @@ class BertEmbeddings(nn.Module):
 class BertModel(nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.config = config
         self.embeddings = BertEmbeddings(config)
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
+        self.apply(self.init_bert_weights)
+
+    def init_bert_weights(self, module):
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+        elif isinstance(module, nn.LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
 
     def forward(self, input_ids, token_type_ids, attention_mask):
         if attention_mask is None:
